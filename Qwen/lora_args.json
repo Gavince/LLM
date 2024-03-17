@@ -1,0 +1,1 @@
+{"lora_r": 64, "lora_alpha": 16, "lora_dropout": 0.05, "lora_target_modules": ["c_attn", "c_proj", "w1", "w2"], "lora_weight_path": "", "lora_bias": "none", "q_lora": false}
