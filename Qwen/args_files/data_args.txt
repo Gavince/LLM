@@ -1,0 +1,5 @@
+{
+  "data_path": "/root/LLM/Qwen/examples/\u5929\u6c14\u9884\u62a5/train.txt",
+  "eval_data_path": null,
+  "lazy_preprocess": true
+}

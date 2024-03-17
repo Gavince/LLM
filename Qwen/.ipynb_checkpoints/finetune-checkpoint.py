@@ -26,6 +26,7 @@ IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="Qwen/Qwen-7B")
 
+
 @dataclass
 class DataArguments:
     data_path: str = field(
@@ -254,11 +255,6 @@ def make_supervised_data_module(
 
     return dict(train_dataset=train_dataset, eval_dataset=eval_dataset)
 
-def save_training_args(training_args, filename):
-    with open(filename, 'w') as f:
-        f.write("TrainingArguments:\n")
-        for key, value in training_args.__dict__.items():
-            f.write(f"{key}: {value}\n")
 
 def train():
     global local_rank
@@ -272,15 +268,6 @@ def train():
         training_args,
         lora_args,
     ) = parser.parse_args_into_dataclasses()
-    json_str = training_args.to_json_string()
-    with open('training_args.json', 'w') as f:
-        f.write(json_str)
-    with open('lora_args.json', 'w') as f:
-        json.dump(vars(lora_args), f)
-    with open('data_args.json', 'w') as f:
-        json.dump(vars(data_args), f)
-    with open('model_args.json', 'w') as f:
-        json.dump(vars(model_args), f)
     # This serves for single-gpu qlora.
     if getattr(training_args, 'deepspeed', None) and int(os.environ.get("WORLD_SIZE", 1))==1:
         training_args.distributed_state.distributed_type = DistributedType.DEEPSPEED
