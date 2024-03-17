@@ -148,7 +148,7 @@ update_or_append_to_env "GPUID1" "$gpu_id1"
 update_or_append_to_env "GPUID2" "$gpu_id2"
 
 
-
+# 如果使用api服务，则运行如下脚本
 if [ $llm_api = 'cloud' ]; then
   need_input_openai_info=1
   OPENAI_API_KEY=$(grep OPENAI_API_KEY .env | cut -d '=' -f2)
@@ -249,6 +249,7 @@ else
     fi
 fi
 
+# 检测系统运行环境
 if [ -e /proc/version ]; then
   if grep -qi microsoft /proc/version || grep -qi MINGW /proc/version; then
     if grep -qi microsoft /proc/version; then
