@@ -63,6 +63,7 @@ class MilvusClient:
         for batch_idx, result in enumerate(batch_result):
             new_cands = []
             result.sort(key=lambda x: x.score)
+            # 获取指定阈值的数据,若无则直接选取top-k个元素
             valid_results = [cand for cand in result if cand.score <= self.threshold]
             if len(valid_results) == 0:  # 如果没有合适的结果，就取topk
                 valid_results = result[:self.top_k]

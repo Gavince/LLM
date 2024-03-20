@@ -29,11 +29,13 @@ class YouDaoLocalEmbeddings:
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = []
+            # 按照batch_size大小进行数据切分，限制文本长度, 
             for i in range(0, len(texts), batch_size):
                 batch = texts[i:i + batch_size]
                 future = executor.submit(self._get_embedding, batch)
                 futures.append(future)
             debug_logger.info(f'embedding number: {len(futures)}')
+            # 合并embedding
             for future in tqdm(futures):
                 embeddings = future.result()
                 all_embeddings += embeddings

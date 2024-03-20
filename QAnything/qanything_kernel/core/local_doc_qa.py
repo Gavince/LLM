@@ -128,8 +128,11 @@ class LocalDocQA:
         if not top_k:
             top_k = self.top_k
         source_documents = []
+        # 查询embedding向量
+        # 1、限制文本长度；2、合并embedding向量
         embs = self.embeddings._get_len_safe_embeddings(queries)
         t1 = time.time()
+        # tok召回
         batch_result = milvus_kb.search_emb_async(embs=embs, top_k=top_k)
         t2 = time.time()
         debug_logger.info(f"milvus search time: {t2 - t1}")
