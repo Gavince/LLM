@@ -148,7 +148,7 @@ update_or_append_to_env "GPUID1" "$gpu_id1"
 update_or_append_to_env "GPUID2" "$gpu_id2"
 
 
-# 如果使用api服务，则运行如下脚本
+
 if [ $llm_api = 'cloud' ]; then
   need_input_openai_info=1
   OPENAI_API_KEY=$(grep OPENAI_API_KEY .env | cut -d '=' -f2)
@@ -249,7 +249,6 @@ else
     fi
 fi
 
-# 检测系统运行环境
 if [ -e /proc/version ]; then
   if grep -qi microsoft /proc/version || grep -qi MINGW /proc/version; then
     if grep -qi microsoft /proc/version; then
@@ -275,16 +274,20 @@ if [ -e /proc/version ]; then
         echo "Running under git bash"
     fi
     
-    if docker-compose -p user -f docker-compose-windows.yaml down | tee /dev/tty | grep -q "services.qanything_local.deploy.resources.reservations value 'devices' does not match any of the regexes"; then
+    if docker-compose -p user -f docker-compose-windows.yaml down |& tee /dev/tty | grep -q "services.qanything_local.deploy.resources.reservations value 'devices' does not match any of the regexes"; then
         echo "检测到 Docker Compose 版本过低，请升级到v2.23.3或更高版本。执行docker-compose -v查看版本。"
     fi
+    mkdir -p volumes/es/data
+    chmod 777 -R volumes/es/data
     docker-compose -p user -f docker-compose-windows.yaml up -d
     docker-compose -p user -f docker-compose-windows.yaml logs -f qanything_local
   else
     echo "Running under native Linux"
-    if docker-compose -p user -f docker-compose-linux.yaml down | tee /dev/tty | grep -q "services.qanything_local.deploy.resources.reservations value 'devices' does not match any of the regexes"; then
+    if docker-compose -p user -f docker-compose-linux.yaml down |& tee /dev/tty | grep -q "services.qanything_local.deploy.resources.reservations value 'devices' does not match any of the regexes"; then
         echo "检测到 Docker Compose 版本过低，请升级到v2.23.3或更高版本。执行docker-compose -v查看版本。"
     fi
+    mkdir -p volumes/es/data
+    chmod 777 -R volumes/es/data
     docker-compose -p user -f docker-compose-linux.yaml up -d
     docker-compose -p user -f docker-compose-linux.yaml logs -f qanything_local
     # 检查日志输出

@@ -128,12 +128,9 @@ class LocalDocQA:
         if not top_k:
             top_k = self.top_k
         source_documents = []
-        # 查询embedding向量
-        # 1、限制文本长度；2、合并embedding向量
         embs = self.embeddings._get_len_safe_embeddings(queries)
         t1 = time.time()
-        # tok召回
-        batch_result = milvus_kb.search_emb_async(embs=embs, top_k=top_k)
+        batch_result = milvus_kb.search_emb_async(embs=embs, top_k=top_k, queries=queries)
         t2 = time.time()
         debug_logger.info(f"milvus search time: {t2 - t1}")
         for query, query_docs in zip(queries, batch_result):
@@ -198,19 +195,25 @@ class LocalDocQA:
     def rerank_documents_for_local(self, query, source_documents):
         if len(query) > 300:  # tokens数量超过300时不使用local rerank
             return source_documents
+
+        source_documents_reranked = []
         try:
             response = requests.post(f"{self.local_rerank_service_url}/rerank",
                                      json={"passages": [doc.page_content for doc in source_documents], "query": query})
             scores = response.json()
             for idx, score in enumerate(scores):
                 source_documents[idx].metadata['score'] = score
+                if score < 0.35 and len(source_documents_reranked) > 0:
+                    continue
+                source_documents_reranked.append(source_documents[idx])
 
-            source_documents = sorted(source_documents, key=lambda x: x.metadata['score'], reverse=True)
+            source_documents_reranked = sorted(source_documents_reranked, key=lambda x: x.metadata['score'], reverse=True)
         except Exception as e:
             debug_logger.error("rerank error: %s", traceback.format_exc())
             debug_logger.warning("rerank error, use origin retrieval docs")
+            source_documents_reranked = sorted(source_documents, key=lambda x: x.metadata['score'], reverse=True)
 
-        return source_documents
+        return source_documents_reranked
 
     @get_time
     def get_knowledge_based_answer(self, query, milvus_kb, chat_history=None, streaming: bool = STREAMING,
