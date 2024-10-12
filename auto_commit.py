@@ -1,6 +1,7 @@
 import os
 import subprocess
 from datetime import datetime
+import json
 import requests
 
 def get_git_diff():
@@ -26,7 +27,32 @@ def generate_commit_message_with_ollama(diff):
     except requests.RequestException as e:
         print(f"调用Ollama API时出错: {e}")
         return "feat: 自动生成的提交"
-
+def generate_commit_message_with_ollama(diff):
+    api_url = "http://localhost:11434/api/generate"
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "model": "qwen2.5:14b",
+        "prompt": f"根据以下Git差异生成一个简洁的commit消息，遵循Conventional Commits规范：\n\n{diff}\n\nCommit消息："
+    }
+    
+    try:
+        response = requests.post(api_url, headers=headers, json=payload, stream=True)
+        response.raise_for_status()
+        
+        full_response = ""
+        for line in response.iter_lines():
+            if line:
+                try:
+                    json_line = json.loads(line)
+                    if 'response' in json_line:
+                        full_response += json_line['response']
+                except json.JSONDecodeError:
+                    print(f"无法解析JSON行: {line}")
+        
+        return full_response.strip()
+    except requests.RequestException as e:
+        print(f"调用Ollama API时出错: {e}")
+        return "feat: 自动生成的提交"
 def git_auto_commit():
     # 切换到Git仓库目录
     os.chdir('./')
