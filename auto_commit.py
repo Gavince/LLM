@@ -15,7 +15,7 @@ def generate_commit_message_with_ollama(diff):
     api_url = "http://localhost:11434/api/generate"
     headers = {"Content-Type": "application/json"}
     payload = {
-        "model": "codellama",
+        "model": "qwen2.5:14b",
         "prompt": f"根据以下Git差异生成一个简洁的commit消息，遵循Conventional Commits规范：\n\n{diff}\n\nCommit消息："
     }
     
