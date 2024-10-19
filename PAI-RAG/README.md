@@ -1,125 +1,332 @@
-# PAI-RAG: 基于大语言模型和多向量数据库的知识库问答系统白盒化解决方案
+<p align="center">
+    <h1>PAI-RAG: An easy-to-use framework for modular RAG </h1>
+</p>
 
-- 支持多种向量数据库: Hologres、Elasticsearch、OpenSearch、AnalyticDB、以及本地FAISS向量库
-- 支持多种向量化模型(中文、英文、多语言): SGPT-125M, text2vec-large-chinese, text2vec-base-chinese, paraphrase-multilingual, OpenAIEmbeddings
-- 支持任意基于PAI-EAS部署的大模型服务: Qwen, chatglm, llama2, baichuan等系列模型，同时支持ChatGPT调用（需提供OpenAI Key）
-- 部署参考链接：[PAI+向量检索快速搭建大模型知识库对话](https://help.aliyun.com/zh/pai/use-cases/use-pai-and-vector-search-to-implement-intelligent-dialogue-based-on-the-foundation-model?spm=a2c4g.11186623.0.0.4510e3efQRyPdt)
+[![PAI-RAG CI Build](https://github.com/aigc-apps/PAI-RAG/actions/workflows/ci.yml/badge.svg)](https://github.com/aigc-apps/PAI-RAG/actions/workflows/ci.yml)
 
-## PAI-RAG白盒化解决方案系统架构图
-![SystemArchitecture](html/image.png)
-- Step1: 文档处理、切片，针对文本进行不同格式和长度的切分
-- Step2: 文本向量化，导入到向量数据库
-- Step3: 用户Query向量化，并进行向量相似度检索，获取Top-K条相似文本块
-- Step4: 将用户query和Top-K条文本块基于上下文构建Prompt
-- Step5: 大模型推理回答，必要时可以finetune模型
+<p align="center">
+  <a href="./README.md">English</a> |
+  <a href="./README_zh.md">简体中文</a> |
+</p>
 
-### 白盒化自建方案与一体化方案对比
+<details open>
+<summary></b>📕 Contents</b></summary>
 
-| 维度 | 白盒化自建 | 一体化方案 | 
-| ------- | ------- | ------- |
-| 模型灵活度 | 支持多种中英文开源模型，如llama2, baichuan, ChatGLM，Qwen，mistral等系列模型，也支持通过API方式调用的模型，比如OpenAI，Gemini各种API | 仅支持内嵌大模型 |
-| 模型推理加速 | 支持vLLM、 flash-attention等大模型推理加速框架 | 一般不支持 |
-| 向量数据库 | 支持多种向量数据库: Hologres、Elasticsearch、OpenSearch、AnalyticDB、以及本地FAISS向量库 | 仅支持内置 | 
-| 业务数据Finetune | 支持 | 一般不支持 |
-| Embedding模型 | 支持多种中文/英文/多语言向量模型以及不同的向量维度 | 内置为主，有限的官方和开源模型 |
-| 超参数调整 | 支持多种超参数调整，如文档召回参数、模型推理参数 | 有的仅支持temperature和topK |
-| Prompt模板 | 提供多种Prompt Template：General, Exreact URL, Accurate Content, 支持用户自定义Prompt| 不支持 |
-| 知识库文件格式及上传方式 | 支持多种文件格式：txt、pdf、doc、markdown等, 支持多个文件同时上传, 支持整个文件夹上传 | 文件格式支持txt、doc、pdf、html、json, 只能单个文件上传 |
-| 文本处理 | 可根据实际文本情况自定义切块方式: 切块大小 chunk size, 重叠大小 overlap size | 基于段落拆分模型，仅支持默认中文分词器，不能调整 |
+- 💡 [What is PAI-RAG?](#what-is-pai-rag)
+- 🌟 [Key Features](#key-features)
+- 🔎 [Get Started](#get-started)
+  - [Local](#run-in-local-environment)
+  - [Docker](#run-in-docker)
+- 🔧 [API Service](#api-service)
 
-## Step 1: 开发环境
+</details>
 
-### 方案一：本地conda安装
+# 💡 What is PAI-RAG?
 
-1. 创建虚拟环境，并安装依赖
-```bash
-conda create --name llm_py310 python=3.10
-conda activate llm_py310
+PAI-RAG is an easy-to-use opensource framework for modular RAG (Retrieval-Augmented Generation). It combines LLM (Large Language Model) to provide truthful question-answering capabilities, supports flexible configuration and custom development of each module of the RAG system. It offers a production-level RAG workflow for businesses of any scale based on Alibaba Cloud's Platform of Artificial Intelligence (PAI).
 
-git clone https://github.com/aigc-apps/LLM_Solution.git
-cd LLM_Solution
+# 🌟 Key Features
 
-sh install.sh
-pip install --upgrade -r requirements.txt
-```
+![framework](docs/figures/framework.jpg)
 
-2. 下载RefGPT模型以供后续对HTML文件进行QA提取
-```bash
-wget http://atp-modelzoo-sh.oss-cn-shanghai.aliyuncs.com/release/langchain/refgpt.tar.gz
-tar -xzvf refgpt.tar.gz && rm -rf refgpt.tar.gz
-```
+- Modular design, flexible and configurable
+- Built on community open source components, low customization threshold
+- Multi-dimensional automatic evaluation system, easy to grasp the performance quality of each module
+- Integrated llm-based-application tracing and evaluation visualization tools
+- Interactive UI/API calls, convenient iterative tuning experience
+- Alibaba Cloud fast scenario deployment/image custom deployment/open source private deployment
 
-### 方案二：Docker启动
+# 🔎 Get Started
 
-1. 拉取已有的docker环境，防止因环境安装失败导致的不可用
-```bash
-docker pull registry.cn-beijing.aliyuncs.com/mybigpai/aigc_apps:env
-```
+## Run in Local Environment
 
-2. 启动docker
-```bash
-sudo docker run -t -d --network host  --name llm_docker registry.cn-beijing.aliyuncs.com/mybigpai/aigc_apps:env
-docker exec -it llm_docker bash
-cd /code/LLM_Solution
-```
+1. Clone Repo
 
-3. 最新代码需要挂载本地目录到docker中
+   ```bash
+   git clone git@github.com:aigc-apps/PAI-RAG.git
+   ```
 
-4. 下载RefGPT模型以供后续对HTML文件进行QA提取
-```bash
-wget http://atp-modelzoo-sh.oss-cn-shanghai.aliyuncs.com/release/langchain/refgpt.tar.gz
-tar -xzvf refgpt.tar.gz && rm -rf refgpt.tar.gz
-```
+2. Development Environment Settings
 
-## Step 2: 运行启动WebUI
+   This project uses poetry for management. To ensure environmental consistency and avoid problems caused by Python version differences, we specify Python version 3.11.
+
+   ```bash
+   conda create -n rag_env python==3.11
+   conda activate rag_env
+   ```
+
+### (1) CPU
+
+Use poetry to install project dependency packages directly:
 
 ```bash
-uvicorn webui:app --host 0.0.0.0 --port 8000
+pip install poetry
+poetry install
 ```
-看到如下界面即表示启动成功
-![webui](html/webui.jpg)
 
-### 2.1 页面配置
+### (2) GPU
 
-- **Emebdding Model Config**: 根据实际情况配置，不同model对应的向量维度(embedding dimension)不同。
-  - SGPT-125M-weightedmean-nli-bitfit: 768
-  - text2vec-large-chinese: 1024
-  - text2vec-base-chinese: 768
-  - paraphrase-multilingual-MiniLM-L12-v2: 368
-  - OpenAIEmbeddings(text-embedding-ada-002): 1536
+First replace the default pyproject.toml with the GPU version, and then use poetry to install the project dependency package:
 
-- **LLM Config**: 使用PAI-EAS部署LLM大模型推理服务，并获取URL和token填入。
-  - [5分钟使用EAS一键部署LLM大语言模型应用](https://help.aliyun.com/zh/pai/use-cases/deploy-llm-in-eas?spm=a2c4g.11186623.0.0.3f5b446e79KaHf)
+```bash
+mv pyproject_gpu.toml pyproject.toml && rm poetry.lock
+pip install poetry
+poetry install
+```
 
-- **Vector Store Config**: 根据实际情况，选择所需的向量数据库进行配置
-  - 如何配置向量数据库请参考[PAI+向量检索快速搭建大模型知识库对话：步骤一](https://help.aliyun.com/zh/pai/use-cases/use-pai-and-vector-search-to-implement-intelligent-dialogue-based-on-the-foundation-model?spm=a2c4g.11186623.0.0.4510e3efQRyPdt)
+- Common network timeout issues
 
-### 2.2 知识库上传
+  Note: During the installation, if you encounter a network connection timeout, you can add the Alibaba Cloud or Tsinghua mirror source and append the following lines to the end of the pyproject.toml file:
 
-- **文档上传**：
-  - 支持多种文件格式：txt、pdf、doc、markdown等
-  - 支持多个文件同时上传
-  - 支持一个目录文件上传
-  
-- **文本处理**：
-  - chunk size: 块大小（将文档划分成的块的大小）
-  - overlap size: 块重叠大小（相邻文档块彼此重叠的部分）
+  ```bash
+  [[tool.poetry.source]]
+  name = "mirrors"
+  url = "http://mirrors.aliyun.com/pypi/simple/" # Aliyun
+  # url = "https://pypi.tuna.tsinghua.edu.cn/simple/" # Qsinghua
+  priority = "default"
+  ```
 
-### 2.3 聊天问答
+  After that, execute the following commands:
 
-- 支持不同问答方式: VectorStore, LLM, Langchain(VectorStore+LLM)
-- 支持多种不同的推理参数调优：
-  - 文档召回参数: 
-    - Top-K: 根据相似度分数召回K条最相关的文本块
-    - ScoreThreshold: 设置召回文本块的相似度分数阈值
-  - 模型推理参数: 
-    - Top K: 从tokens里选择k个作为候选，然后根据它们的likelihood scores来采样。值越大，生成的内容可能性越大；值越小，生成的内容越固定。
-    - Top P: 候选词列表是动态的，从tokens里按百分比选择候选词
-    - Temperature: 用于控制模型输出的结果的随机性，值越大随机性越大
-- 支持多种Prompt Template和用户自定义:
-  - General: ```基于以下已知信息，简洁和专业的来回答用户的问题。如果无法从中得到答案，请说 "根据已知信息无法回答该问题" 或 "没有提供足够的相关信息"，不允许在答案中添加编造成分，答案请使用中文。 ===== 已知信息: {context}  ===== 用户问题: {question}```
-  - Exreact URL: ```你是一位智能小助手，请根据下面我所提供的相关知识，对我提出的问题进行回答。回答的内容必须包括其定义、特征、应用领域以及相关网页链接等等内容，同时务必满足下方所提的要求！===== 知识库相关知识如下: {context} ===== 请根据上方所提供的知识库内容与要求，回答以下问题: {question}```
-  - Accurate Content: ```你是一位知识小助手，请根据下面我提供的知识库中相关知识，对我提出的若干问题进行回答，同时回答的内容需满足我所提的要求! ===== 知识库相关知识如下: {context} ===== 请根据上方所提供的知识库内容与要求，回答以下问题: {question}```
-  - Customize: 支持用户自定义
-- 支持上下文聊天: ```With Chat History = True```
-- 支持对话总结: Summary
+  ```bash
+  poetry lock
+  poetry install
+  ```
+
+3. Load Data
+
+   Insert new files in the data_path into the current index storage:
+
+   ```bash
+   load_data -c src/pai_rag/config/settings.yaml -d data_path -p pattern
+   ```
+
+   path examples:
+
+   ```
+   a. load_data -d test/example
+   b. load_data -d test/example_data/pai_document.pdf
+   c. load_data -d test/example_data -p *.pdf
+
+   ```
+
+4. Run RAG Service
+
+   To use the OpenAI or DashScope API, you need to introduce environment variables:
+
+   ```bash
+   export OPENAI_API_KEY=""
+   export DASHSCOPE_API_KEY=""
+   ```
+
+   To utilize Object Storage Service (OSS) for file storage, particularly when operating in multimodal mode, you must first configure settings in both the src/pai_rag/config/settings.toml and src/pai_rag/config/settings_multi_modal.toml configuration files. Append the following TOML configuration snippet within these files:
+
+   ```toml
+   [rag.oss_store]
+   bucket = ""
+   endpoint = ""
+   prefix = ""
+   ```
+
+   Additionally, you need to introduce environment variables:
+
+   ```bash
+   export OSS_ACCESS_KEY_ID=""
+   export OSS_ACCESS_KEY_SECRET=""
+   ```
+
+   ```bash
+   # Support custom host (default 0.0.0.0), port (default 8001), config (default src/pai_rag/config/settings.yaml), enable-example (default True), skip-download-models (default False)
+   # Download [bge-large-zh-v1.5, easyocr] by default, you can skip it by setting --skip-download-models.
+   # you can use tool "load_model" to download other models including [bge-large-zh-v1.5, easyocr, SGPT-125M-weightedmean-nli-bitfit, bge-large-zh-v1.5, bge-m3, bge-reranker-base, bge-reranker-large, paraphrase-multilingual-MiniLM-L12-v2, qwen_1.8b, text2vec-large-chinese]
+   pai_rag serve [--host HOST] [--port PORT] [--config CONFIG_FILE] [--enable-example False] [--skip-download-models]
+   ```
+
+   The default configuration file is src/pai_rag/config/settings.yaml. However, if you require the multimodal llm module, you should switch to the src/pai_rag/config/settings_multi_modal.yaml file instead.
+
+   ```bash
+   pai_rag serve -c src/pai_rag/config/settings_multi_modal.yaml
+   ```
+
+5. Download provided models to local directory
+
+   ```bash
+   # Support model name (default ""), download all models mentioned before without parameter model_name.
+   load_model [--model-name MODEL_NAME]
+   ```
+
+6. Run RAG WebUI
+
+   ```bash
+   # Supports custom host (default 0.0.0.0), port (default 8002), config (default localhost:8001)
+   pai_rag ui [--host HOST] [--port PORT] [rag-url RAG_URL]
+   ```
+
+   You can also open http://127.0.0.1:8002/ to configure the RAG service and upload local data.
+
+## Run in Docker
+
+To make it easier to use and save time on environment installation, we also provide a method to start directly based on the image.
+
+### Use public images directly
+
+1. RAG Service
+
+- CPU
+
+  ```bash
+  docker pull mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/mybigpai/pairag:0.1.0
+
+  # -p (port) -v (mount embedding and rerank model directories) -e (set environment variables, if using Dashscope LLM/Embedding, need to be introduced) -w (number of workers, can be specified as the approximate number of CPU cores)
+  docker run --name pai_rag \
+              -p 8001:8001 \
+              -v /huggingface:/huggingface \
+              -v /your_local_documents_path:/data \
+              -e DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY} \
+              -d \
+              mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/mybigpai/pairag:0.1.0 gunicorn -b 0.0.0.0:8001 -w 16 -k uvicorn.workers.UvicornH11Worker pai_rag.main:app
+  ```
+
+- GPU
+
+  ```bash
+  docker pull mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/mybigpai/pairag:0.1.0-gpu
+
+  # -p (port) -v (mount embedding and rerank model directories) -e (set environment variables, if using Dashscope LLM/Embedding, you need to introduce it) -w (number of workers, which can be specified as the approximate number of CPU cores)
+  docker run --name pai_rag \
+              -p 8001:8001 \
+              -v /huggingface:/huggingface \
+              -v /your_local_documents_path:/data \
+              --gpus all \
+              -e DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY} \
+              -d \
+              mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/mybigpai/pairag:0.1.0-gpu gunicorn -b 0.0.0.0:8001 -w 16 -k uvicorn.workers.UvicornH11Worker pai_rag.main:app
+  ```
+
+2. Load Data
+
+   Insert new files in the /data into the current index storage:
+
+   ```bash
+   sudo docker exec -ti pai_rag bash
+   load_data -c src/pai_rag/config/settings.yaml -d /data -p pattern
+   ```
+
+   path examples:
+
+   ```
+   a. load_data -d /data/test/example
+   b. load_data -d /data/test/example_data/pai_document.pdf
+   c. load_data -d /data/test/example_data -p *.pdf
+   ```
+
+3. RAG UI
+   Linux:
+
+```bash
+docker pull mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/mybigpai/pairag:0.1.0-ui
+
+docker run --network host -d mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/mybigpai/pairag:0.1.0-ui
+```
+
+Mac/Windows:
+
+```bash
+docker pull mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/mybigpai/pairag:0.1.0-ui
+
+docker run -p 8002:8002 -d mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/mybigpai/pairag:0.1.0_ui pai_rag ui -p 8002 -c http://host.docker.internal:8001/
+```
+
+You can also open http://127.0.0.1:8002/ to configure the RAG service and upload local data.
+
+### Build your own image based on Dockerfile
+
+You can refer to [How to Build Docker](docs/docker_build.md) to build the image yourself.
+
+After the image is built, you can refer to the above steps to start the Rag service and WebUI.
+
+# 🔧 API Service
+
+You can use the command line to send API requests to the server, for example, calling the [Upload API](#upload-api) to upload a knowledge base file.
+
+## Upload API
+
+It supports uploading local files through API and supports specifying different failure_paths. Each time an API request is sent, a task_id will be returned. The file upload status (processing, completed, failed) can then be checked through the task_id.
+
+- upload_data
+
+```bash
+curl -X 'POST' http://127.0.0.1:8000/service/upload_data -H 'Content-Type: multipart/form-data' -F 'files=@local_path/PAI.txt' -F 'faiss_path=localdata/storage'
+
+# Return: {"task_id": "2c1e557733764fdb9fefa063538914da"}
+```
+
+- get_upload_state
+
+```bash
+curl http://127.0.0.1:8001/service/get_upload_state\?task_id\=2c1e557733764fdb9fefa063538914da
+
+# Return: {"task_id":"2c1e557733764fdb9fefa063538914da","status":"completed"}
+```
+
+## Query API
+
+- Supports three dialogue modes:
+  - /query/retrieval
+  - /query/llm
+  - /query: (default) RAG (retrieval + llm)
+
+```bash
+curl -X 'POST' http://127.0.0.1:8000/service/query -H "Content-Type: application/json" -d '{"question":"PAI是什么？"}'
+```
+
+- Multi-round dialogue
+
+```bash
+curl -X 'POST' http://127.0.0.1:8000/service/query -H "Content-Type: application/json" -d '{"question":"What is PAI?"}'
+```
+
+> Parameters: session_id
+>
+> The unique identifier of the conversation history session. After the session_id is passed in, the conversation history will be recorded. Calling the large model will automatically carry the stored conversation history.
+>
+> ```bash
+> curl -X 'POST' http://127.0.0.1:8000/service/query -H "Content-Type: application/json" -d '{"question":"What are its advantages?", "session_id": "1702ffxxad3xxx6fxxx97daf7c"}'
+> ```
+
+> Parameters: chat_history
+>
+> The conversation history between the user and the model. Each element in the list is a round of conversation in the form of {"user":"user input","bot":"model output"}. Multiple rounds of conversations are arranged in chronological order.
+>
+> ```bash
+> curl -X 'POST' http://127.0.0.1:8000/service/query -H "Content-Type: application/json" -d '{"question":"What are its features？", "chat_history": [{"user":"What is PAI?", "bot":"PAI is Alibaba Cloud's artificial intelligence platform, which provides a one-stop machine learning solution. This platform supports various machine learning tasks, including supervised learning, unsupervised learning, and reinforcement learning, and is suitable for multiple scenarios such as marketing, finance, and social networks."}]}'
+> ```
+
+> Parameters: session_id + chat_history
+>
+> Chat_history will be used to append and update the conversation history corresponding to the stored session_id
+>
+> ```bash
+> curl -X 'POST' http://127.0.0.1:8000/service/query -H "Content-Type: application/json" -d '{"question":"What are its advantages?", "chat_history": [{"user":"PAI是什么？", "bot":"PAI is Alibaba Cloud's artificial intelligence platform, which provides a one-stop machine learning solution. This platform supports various machine learning tasks, including supervised learning, unsupervised learning, and reinforcement learning, and is suitable for multiple scenarios such as marketing, finance, and social networks."}], "session_id": "1702ffxxad3xxx6fxxx97daf7c"}'
+> ```
+
+- Agent And Function Tool
+
+```bash
+curl -X 'POST' http://127.0.0.1:8000/service/query/agent -H "Content-Type: application/json" -d '{"question":"This year is 2024. What year was it 10 years ago?"}'
+```
+
+# Agentic RAG
+
+You can use agent with function calling api-tools in PAI-RAG, please refer to the documentation:
+[Agentic RAG](./example_data/function_tools/api-tool-with-intent-detection-for-travel-assistant/README.md)
+
+# Data Analysis
+
+You can use data analysis based on database or sheet file in PAI-RAG, please refer to the documentation: [Data Analysis](./docs/data_analysis_doc.md)
+
+# Parameter Configuration
+
+For more customization options, please refer to the documentation:
+
+[Parameter Configuration Instruction](./docs/config_guide_en.md)

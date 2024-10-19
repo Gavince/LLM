@@ -170,11 +170,13 @@ class Scheduler:
         now = time.time()
 
         # Join waiting sequences if possible.
+        # 如果交换区为空,则等待区数据进入
         if not self.swapped:
             ignored_seq_groups: List[SequenceGroup] = []
             scheduled: List[SequenceGroup] = []
             # The total number of sequences on the fly, including the
             # requests in the generation phase.
+            # 计算当前正在进行的请求个数
             num_curr_seqs = sum(seq_group.get_max_num_running_seqs()
                                 for seq_group in self.running)
             curr_loras = set(

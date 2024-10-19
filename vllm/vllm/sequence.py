@@ -181,6 +181,7 @@ class Sequence:
 
         self.logical_token_blocks: List[LogicalTokenBlock] = []
         # Initialize the logical token blocks with the prompt token ids.
+        # 用prompt初始化现有的逻辑块    
         self._append_tokens_to_blocks(prompt_token_ids)
         self.status = SequenceStatus.WAITING
         self.stop_reason: Union[int, str, None] = None
@@ -345,6 +346,7 @@ class SequenceGroup:
         multi_modal_data: Optional[MultiModalData] = None,
     ) -> None:
         self.request_id = request_id
+        # 为什么会是一个字典，一条prompt 只有个seq
         self.seqs_dict = {seq.seq_id: seq for seq in seqs}
         self.sampling_params = sampling_params
         self.metrics = RequestMetrics(arrival_time=arrival_time,

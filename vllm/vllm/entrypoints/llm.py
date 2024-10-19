@@ -109,6 +109,7 @@ class LLM:
             **kwargs,
         )
         self.llm_engine = LLMEngine.from_engine_args(engine_args)
+        # 全局唯一计数器，用来作为每一条请求rq
         self.request_counter = Counter()
 
     def get_tokenizer(
@@ -175,6 +176,7 @@ class LLM:
             prompt = prompts[i] if prompts is not None else None
             token_ids = None if prompt_token_ids is None else prompt_token_ids[
                 i]
+            # 为每一个prompt执行一次请求    
             self._add_request(
                 prompt,
                 sampling_params,

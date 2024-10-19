@@ -270,6 +270,7 @@ class LLMEngine:
                              f"{max_logprobs} logprobs.")
         if arrival_time is None:
             arrival_time = time.time()
+        # 为每一个prompt计算自己的token_id
         prompt_token_ids = self.encode_request(
             request_id=request_id,
             prompt=prompt,
@@ -277,11 +278,13 @@ class LLMEngine:
             lora_request=lora_request)
 
         # Create the sequences.
+        # 获取逻辑块和物理块的存储大小, 默认为：16
         block_size = self.cache_config.block_size
-        # 获取相应序列的序列id
+        # 获取每条prompt相应序列的序列id
         seq_id = next(self.seq_counter)
         eos_token_id = self.tokenizer.get_lora_tokenizer(
             lora_request).eos_token_id
+        # 创建一个Sequence序列
         seq = Sequence(seq_id, prompt, prompt_token_ids, block_size,
                        eos_token_id, lora_request)
 
@@ -293,7 +296,7 @@ class LLMEngine:
         sampling_params.eos_token_id = seq.eos_token_id
 
         # Create the sequence group. 
-        # 每一个单条rq文本会生成多个不同的数据 
+        # 每一个单条rq文本会生成多个不同的数据， 单条seq封装一个sequenceGroup类
         seq_group = SequenceGroup(request_id, [seq], sampling_params,
                                   arrival_time, lora_request, multi_modal_data)
 
