@@ -16,9 +16,6 @@ type = ""
 [rag.agent.tool]
 type = ""
 
-[rag.chat_engine]
-type = "CondenseQuestionChatEngine"
-
 [rag.chat_store]
 type = "Local" # [Local, Aliyun-Redis]
 host = "Aliyun-Redis host"
@@ -36,33 +33,32 @@ type = "local"
 type = "SimpleDirectoryReader"
 
 # embedding configurations, source support API: OpenAI,DashScope; and local model:HuggingFace
-# if use API, need set OPENAI_API_KEY or DASHSCOPE_API_KEY in ENV, If HuggingFace, need set model_name
+# if use API, need set OPENAI_API_KEY or DASHSCOPE_API_KEY in ENV, If HuggingFace, need set model
 # eg.
 # source = "HuggingFace"
-# model_name = "bge-small-zh-v1.5"
+# model = "bge-large-zh-v1.5"
 # embed_batch_size = 10
 [rag.embedding]
 source = "DashScope"
 embed_batch_size = 10
 
-[rag.evaluation]
-retrieval = ["mrr", "hit_rate"]
-response_label = true
-response = ["Faithfulness", "Answer Relevancy", "Correctness", "Semantic Similarity"]
+[rag.embedding.multi_modal]
+source = "cnclip"
 
 [rag.index]
 persist_path = "localdata/storage"
+enable_multimodal = true
 vector_store.type = "FAISS"
 
 # llm configurations, source support API: OpenAI,DashScope or PAI-EAS's deployment
 # eg.
 # source = "PaiEas"
-# name = ""
+# model = ""
 # endpoint = ""
 # token = ""
 [rag.llm]
 source = "DashScope"
-name = "qwen-turbo"
+model = "qwen-turbo"
 
 [rag.llm.function_calling_llm]
 source = ""
@@ -70,9 +66,6 @@ source = ""
 [rag.llm.multi_modal]
 enable = false
 source = ""
-
-[rag.llm_chat_engine]
-type = "SimpleChatEngine"
 
 [rag.node_enhancement]
 tree_depth = 3
@@ -83,6 +76,7 @@ proba_threshold = 0.10
 type = "Sentence"
 chunk_size = 500
 chunk_overlap = 10
+enable_multimodal = true
 
 [rag.oss_store]
 bucket = ""
@@ -99,6 +93,9 @@ top_n = 2
 
 [rag.query_engine]
 type = "RetrieverQueryEngine"
+
+[rag.query_transform]
+type = ""
 
 [rag.retriever]
 similarity_top_k = 3

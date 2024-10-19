@@ -13,22 +13,19 @@ MODULE_CONFIG_KEY_MAP = {
     "MultiModalLlmModule": "rag.llm.multi_modal",
     "FunctionCallingLlmModule": "rag.llm.function_calling_llm",
     "NodeParserModule": "rag.node_parser",
+    "QueryTransformModule": "rag.query_transform",
     "RetrieverModule": "rag.retriever",
     "PostprocessorModule": "rag.postprocessor",
     "SynthesizerModule": "rag.synthesizer",
     "QueryEngineModule": "rag.query_engine",
     "ChatStoreModule": "rag.chat_store",
-    "ChatEngineFactoryModule": "rag.chat_engine",
-    "LlmChatEngineFactoryModule": "rag.llm_chat_engine",
-    "DataReaderFactoryModule": "rag.data_reader",
+    "DataReaderModule": "rag.data_reader",
     "AgentModule": "rag.agent",
     "ToolModule": "rag.agent.tool",
     "CustomConfigModule": "rag.agent.custom_config",
     "IntentDetectionModule": "rag.agent.intent_detection",
     "DataLoaderModule": "rag.data_loader",
     "OssCacheModule": "rag.oss_store",
-    "EvaluationModule": "rag.evaluation",
-    "BM25IndexModule": "rag.bm25",
     "SearchModule": "rag.search",
     "NodesEnhancementModule": "rag.node_enhancement",
     "DataAnalysisModule": "rag.data_analysis",
@@ -117,8 +114,7 @@ class ModuleRegistry:
         if mod_cache and mod_name in mod_cache:
             return mod_cache[mod_name]
 
-        logger.debug(f"Get module {mod_name}.")
-
+        logger.info(f"Get module {mod_name}.")
         mod_config_key = MODULE_CONFIG_KEY_MAP[mod_name]
         mod_deps = self._mod_deps_map[mod_name]
         mod_cls = self._mod_cls_map[mod_name]
@@ -132,10 +128,12 @@ class ModuleRegistry:
             instance_key not in self._mod_instance_map[mod_name]
             or mod_name == "OssCacheModule"
         ):
-            logger.debug(f"Creating new instance for module {mod_name} {instance_key}.")
+            logger.info(f"Creating new instance for module {mod_name} {instance_key}.")
             self._mod_instance_map[mod_name][instance_key] = mod_cls.get_or_create(
                 params
             )
+        else:
+            logger.info(f"skip create {mod_name} {instance_key}.")
         return self._mod_instance_map[mod_name][instance_key]
 
     def get_mod_instances(self, mod_name: str):

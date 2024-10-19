@@ -15,6 +15,10 @@ from pai_rag.app.api.models import (
 from fastapi.responses import StreamingResponse
 import logging
 
+from pai_rag.integrations.nodeparsers.pai.pai_node_parser import (
+    COMMON_FILE_PATH_FODER_NAME,
+)
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -96,93 +100,59 @@ def task_status(task_id: str):
     return {"task_id": task_id, "status": status, "detail": detail}
 
 
-@router.post("/evaluate")
-async def batch_evaluate(overwrite: bool = False):
-    df, eval_results = await rag_service.aevaluate_retrieval_and_response(
-        type="all", overwrite=overwrite
-    )
-    return {"status": 200, "result": eval_results}
-
-
-@router.post("/evaluate/retrieval")
-async def batch_retrieval_evaluate(overwrite: bool = False):
-    df, eval_results = await rag_service.aevaluate_retrieval_and_response(
-        type="retrieval", overwrite=overwrite
-    )
-    return {"status": 200, "result": eval_results}
-
-
-@router.post("/evaluate/response")
-async def batch_response_evaluate(overwrite: bool = False):
-    df, eval_results = await rag_service.aevaluate_retrieval_and_response(
-        type="response", overwrite=overwrite
-    )
-    return {"status": 200, "result": eval_results}
-
-
-@router.post("/evaluate/generate")
-async def generate_qa_dataset(overwrite: bool = False):
-    qa_datase = await rag_service.aload_evaluation_qa_dataset(overwrite)
-    return {"status": 200, "result": qa_datase}
-
-
 @router.post("/upload_data")
 async def upload_data(
-    files: List[UploadFile],
+    files: List[UploadFile] = Body(None),
+    oss_path: str = Form(None),
     faiss_path: str = Form(None),
     enable_raptor: bool = Form(False),
     background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
     task_id = uuid.uuid4().hex
-    if not files:
-        return {"message": "No upload file sent"}
 
-    tmpdir = tempfile.mkdtemp()
-    input_files = []
-    for file in files:
-        fn = file.filename
-        data = await file.read()
-        file_hash = hashlib.md5(data).hexdigest()
-        save_file = os.path.join(tmpdir, f"{file_hash}_{fn}")
+    if oss_path:
+        background_tasks.add_task(
+            rag_service.add_knowledge,
+            task_id=task_id,
+            filter_pattern=None,
+            oss_path=oss_path,
+            from_oss=True,
+            faiss_path=faiss_path,
+            enable_qa_extraction=False,
+            enable_raptor=enable_raptor,
+        )
+    else:
+        if not files:
+            return {"message": "No upload file sent"}
 
-        with open(save_file, "wb") as f:
-            f.write(data)
-            f.close()
-        input_files.append(save_file)
+        tmpdir = tempfile.mkdtemp()
+        input_files = []
+        for file in files:
+            fn = file.filename
+            data = await file.read()
+            file_hash = hashlib.md5(data).hexdigest()
+            tmp_file_dir = os.path.join(
+                tmpdir, f"{COMMON_FILE_PATH_FODER_NAME}/{file_hash}"
+            )
+            os.makedirs(tmp_file_dir, exist_ok=True)
+            save_file = os.path.join(tmp_file_dir, fn)
 
-    background_tasks.add_task(
-        rag_service.add_knowledge,
-        task_id=task_id,
-        input_files=input_files,
-        filter_pattern=None,
-        oss_prefix=None,
-        faiss_path=faiss_path,
-        enable_qa_extraction=False,
-        enable_raptor=enable_raptor,
-    )
+            with open(save_file, "wb") as f:
+                f.write(data)
+                f.close()
+            input_files.append(save_file)
 
-    return {"task_id": task_id}
-
-
-@router.post("/upload_data_from_oss")
-async def upload_oss_data(
-    oss_prefix: str = None,
-    faiss_path: str = None,
-    enable_raptor: bool = False,
-    background_tasks: BackgroundTasks = BackgroundTasks(),
-):
-    task_id = uuid.uuid4().hex
-    background_tasks.add_task(
-        rag_service.add_knowledge,
-        task_id=task_id,
-        input_files=None,
-        filter_pattern=None,
-        oss_prefix=oss_prefix,
-        faiss_path=faiss_path,
-        enable_qa_extraction=False,
-        enable_raptor=enable_raptor,
-        from_oss=True,
-    )
+        background_tasks.add_task(
+            rag_service.add_knowledge,
+            task_id=task_id,
+            input_files=input_files,
+            filter_pattern=None,
+            oss_path=None,
+            faiss_path=faiss_path,
+            enable_qa_extraction=False,
+            enable_raptor=enable_raptor,
+            temp_file_dir=tmpdir,
+        )
 
     return {"task_id": task_id}
 
